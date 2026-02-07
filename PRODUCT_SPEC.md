@@ -1,153 +1,146 @@
-# VinCircle - Product Specification Document
+# FRIDAYRED — Product Specification Document
 
 ## 1. Product Overview
 
-**VinCircle** is a social wine-tasting iOS app designed for wine enthusiasts to log, rate, and share their wine experiences with a close circle of friends (max 10 "Inner Circle" members).
+**FRIDAYRED** is a social wine ranking app where users build personal, taste-based wine rankings through pairwise comparisons — then leverage their friends' rankings to make smarter purchasing decisions at the store.
 
 ### Vision
-Create a private, intimate social experience around wine discovery—not a public feed, but a trusted circle of friends sharing genuine tasting notes and recommendations.
+Unlike traditional 5-star or 100-point wine ratings, this app captures *relative preference* — how much you liked a wine compared to every other wine you've tried in that grape variety.
 
-### Target Users
-- Wine hobbyists who want to track their tastings
-- Friend groups who enjoy wine together
-- Users seeking local wine store recommendations
+### Growth Model
+**Invite-only launch.** Each user receives **5 invite codes** upon joining. No limit on friends once on the platform.
 
----
-
-## 2. Core Features
-
-### 2.1 Feed Tab
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Friend Posts | View wine posts from Inner Circle friends | ✅ Done |
-| Photo Carousel | Swipe through multiple wine images | ✅ Done |
-| Like & Comment | Engage with friends' posts | ✅ Done |
-| Tier 1 Restriction | Only Inner Circle friends can comment | ✅ Done |
-
-### 2.2 Discover Tab
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Map View | See nearby wine/liquor stores on a map | ✅ Done |
-| Store Details | View store info, distance, open hours | ✅ Done |
-| Friend Match | Highlight stores with wines your friends rated | ✅ Done |
-| Get Directions | Open Apple Maps for navigation | ✅ Done |
-
-### 2.3 My Cellar Tab (formerly "Post")
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Personal Feed | View your own posted tastings | ✅ Done |
-| Delete Posts | Swipe to delete unwanted posts | ✅ Done |
-| View Comments | See friend comments on your posts | ✅ Done |
-| Add Tasting (FAB) | Start a new structured wine tasting entry | ✅ Done |
-
-### 2.4 Circle Tab
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Friend List | View your Inner Circle (max 10 friends) | ✅ Done |
-| Add Friend | Enter 6-digit code or scan QR | ✅ Done |
-| View Leaderboard | See friend's top-rated wines (Elo ranking) | ✅ Done |
-| View Friend Posts | Browse a specific friend's history | ✅ Done |
-
-### 2.5 Profile Tab
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Stats Overview | Tastings count, avg score, countries, achievements | ✅ Done |
-| Top 10 Wines | Personal leaderboard by Elo score | ✅ Done |
-| Achievements | Badge system for milestones | ✅ Done |
-| Settings | Account, notifications, privacy | ✅ Done |
+### Launch Market
+**New York City** — Check Availability feature limited to NYC retailers at launch.
 
 ---
 
-## 3. Data Models
+## 2. Core Concepts
 
-```
-User
-├── id: UUID
-├── displayName: String
-├── uniqueCode: String (6-digit invite code)
-├── friendIds: [UUID] (max 10)
-├── tastingCount: Int
-└── achievements: [Achievement]
+### 2.1 The Ranking Model
+- Rankings are **per grape variety** (Malbec, Pinot Noir, etc.)
+- Rankings are at the **WINE level**, not vintage
+- Position-based (1 = best), ties allowed
+- Percentile scores calculated from position
 
-WinePost
-├── id: UUID
-├── authorId: UUID
-├── wineName, producer, region, country, vintage
-├── wineType: WineType (red, white, rosé, sparkling, dessert)
-├── attributes: WineAttributes
-├── subjectiveScore: Int (1-100)
-├── imageURLs: [URL]
-├── likeCount, commentCount: Int
-└── createdAt: Date
+### 2.2 Wine Identity & Vintage
+**Wine** = Producer + Wine Name + Primary Grape + Region  
+**Vintage Tasting** = Specific experience (2019, 2020, etc.)
 
-Comment
-├── id: UUID
-├── postId: UUID
-├── authorId: UUID
-├── authorName: String
-├── text: String
-└── createdAt: Date
+One wine, one ranking position, multiple vintage experiences.
 
-WineAttributes
-├── acidity, sweetness, tannin, body, alcohol: Double (0-1)
-├── flavorNotes: [FlavorNote]
-├── finish: FinishLength?
-└── oakInfluence: OakLevel?
-```
+### 2.3 Composite Scoring
+- Percentile = `(Total - Rank) / (Total - 1) × 100`
+- Weight = `√(total wines ranked)`
+- Minimum 3 raters to display composite
 
 ---
 
-## 4. User Flows
+## 3. App Structure
 
-### 4.1 Adding a Wine Tasting
-1. Tap "My Cellar" tab → Tap floating **+** button
-2. **Step 1**: Search for wine (autocomplete from API)
-3. **Step 2**: Select vintage year
-4. **Step 3**: Rate attributes (sliders for acidity, body, etc.)
-5. **Step 4**: Add photos (optional)
-6. **Step 5**: Give overall score (1-100)
-7. **Step 6**: Compare with previous wine (optional, for Elo)
-8. Submit → Post appears in your feed and friends' Feed
+### 5-Tab Navigation
 
-### 4.2 Commenting on a Post
-1. Tap comment bubble on any post (Feed or My Cellar)
-2. If authorized (Inner Circle friend), type comment
-3. Submit → Comment appears instantly
+| Tab | Function |
+|-----|----------|
+| **Home** | Friend activity feed + wine search + invite card |
+| **My List** | Personal rankings by grape variety |
+| **Rate** | Wine search → vintage → comparison flow |
+| **Map** | Nearby wine stores (Google Places) |
+| **Profile** | Wine Passport with world map + stats |
 
 ---
 
-## 5. Design System
+## 4. Core Features
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `wineRed` | #722F37 | Primary brand color, CTAs |
-| `champagneGold` | #F7E7CE | Accent, scores, badges |
-| `roseGold` | #B76E79 | Secondary accent |
-| `deepBurgundy` | #4A0E0E | Dark backgrounds |
+### 4.1 Home Tab
+- Search bar for wines
+- Persistent invite card (until 5 invites used)
+- Friend activity feed (chronological)
+
+### 4.2 My List Tab
+- Horizontal grape variety switcher
+- Ordered ranked list with position, wine name, best vintage
+- Tie indicator for tied wines
+
+### 4.3 Rate Tab (Rating Flow)
+1. Search for wine (or add new)
+2. Select vintage (or NV)
+3. Optional photos + notes
+4. Sentiment selection (Loved/Okay/Didn't love)
+5. Adaptive comparison (1-6 swipes)
+6. Wine placed in ranking
+
+### 4.4 Map Tab
+- Nearby wine/liquor stores via Google Places
+- Store details, distance, website links
+
+### 4.5 Profile Tab (Wine Passport)
+- World map with wine region pins
+- Stats: wines rated, regions, grapes, friends
+- Share passport as image
+- Invite codes remaining
 
 ---
 
-## 6. Future Roadmap
+## 5. Data Models
 
-| Priority | Feature | Description |
-|----------|---------|-------------|
-| P0 | Supabase Backend | Replace MockDataService with real persistence |
-| P0 | Auth | Apple Sign-In / Passkey authentication |
-| P1 | Real Wine API | Integrate Wine-Searcher or Vivino API |
-| P1 | Push Notifications | New comments, friend requests |
-| P2 | Photo Upload | Cloud storage for wine images |
-| P2 | Export Data | PDF/CSV of personal tasting history |
-| P3 | Widgets | iOS home screen widget for recent tastings |
+| Model | Key Fields |
+|-------|------------|
+| **Wine** | id, name, producer, primaryGrapeId, regionId |
+| **GrapeVariety** | id, name, color (red/white/rosé) |
+| **WineRegion** | id, name, country, lat/long |
+| **Ranking** | id, userId, grapeId, entries[] |
+| **RankEntry** | id, wineId, position, vintageTastings[] |
+| **VintageTasting** | id, vintageYear, notes, photos, isBestVintage |
+| **InviteCode** | id, code, ownerUserId, usedByUserId |
+| **FeedEvent** | id, actorUserId, eventType, wineId, position |
 
 ---
 
-## 7. Technical Stack
+## 6. Technical Stack
 
 - **Framework**: SwiftUI (iOS 17+)
 - **Architecture**: MVVM with ObservableObject
-- **Styling**: Custom Theme system with wine-inspired palette
-- **Maps**: MapKit with MKLocalSearch
+- **Ranking Engine**: AdaptiveRankingEngine (binary insertion)
+- **Maps**: Apple MapKit
 - **Future Backend**: Supabase (Postgres + Auth + Storage)
+
+---
+
+## 7. MVP Scope
+
+### In Scope
+- [x] Invite-only concept (codes generated)
+- [x] Wine-level rankings by grape
+- [x] Sentiment-based rating flow
+- [x] Personal ranked lists
+- [x] Friend activity feed
+- [x] Wine Passport with stats
+- [x] Nearby store map
+
+### Post-MVP
+- [ ] Full adaptive comparison flow (binary search)
+- [ ] Wine Detail Page with composites
+- [ ] Phone auth + username profiles
+- [ ] Check Availability (NYC)
+- [ ] Push notifications
+- [ ] Camera wine recognition
+
+---
+
+## 8. Implementation Status
+
+| Phase | Status |
+|-------|--------|
+| Data Models | ✅ Complete |
+| AdaptiveRankingEngine | ✅ Complete |
+| Home Tab (Feed + Search) | ✅ Complete |
+| My List Tab | ✅ Complete |
+| Rate Tab (Basic Flow) | ✅ Complete |
+| Map Tab | ✅ Existing |
+| Profile Tab (Passport) | ✅ Complete |
+| Full Comparison Flow | 🔲 TODO |
+| Supabase Integration | 🔲 TODO |
 
 ---
 
